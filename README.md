@@ -8,6 +8,9 @@ In manual mode, the fan is turned on when the system is on. In automatic mode, t
 It turns ON when the temperature reaches the configured threshold, and turns off when the temperature drops below the configured hysteresis threshold.
 While the system is enabled, DHT22 measures temperature and humidity every 2 seconds, which are then displayed on the LCD.
 
+## Logic
+![diagram](diagram.png)
+
 ## Features
 - IR remote system control (works with any IR remote)
 - Temperature and humidity monitoring
