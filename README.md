@@ -31,7 +31,7 @@ While the system is enabled, DHT22 measures temperature and humidity every 2 sec
 - [IRremote](https://github.com/Arduino-IRremote/Arduino-IRremote)
 - [DHT sensor library](https://github.com/adafruit/DHT-sensor-library)
 - [LiquidCrystal I2C](https://github.com/johnrickman/LiquidCrystal_I2C)
-- Wire (included in Arduino framework)
+- `Wire.h` (included in Arduino framework)
 
 ## Pinout
 - IR receiver -> D2
