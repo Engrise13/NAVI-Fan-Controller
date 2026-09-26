@@ -34,8 +34,8 @@ While the system is enabled, DHT22 measures temperature and humidity every 2 sec
 - `Wire.h` (included in Arduino framework)
 
 ## Pinout
-- IR receiver -> D2
-- Relay -> D3
-- DHT22 -> D4
-- LCD SDA -> A4
-- LCD SCL -> A5
+- IR receiver -> `D2`
+- Relay -> `D3`
+- DHT22 -> `D4`
+- LCD SDA -> `A4`
+- LCD SCL -> `A5`
