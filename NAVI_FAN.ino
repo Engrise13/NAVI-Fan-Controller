@@ -1,31 +1,33 @@
-#include <IRremote.hpp>
 #include <DHT.h>
-#include <Wire.h>
+#include <IRremote.hpp>
 #include <LiquidCrystal_I2C.h>
+#include <Wire.h>
 
-#define IR_PIN 2
-#define RELAY_PIN 3
-#define DHT_PIN 4
-#define DHT_TYPE DHT22
+// pin definitions
+constexpr uint8_t kIrPin = 2;
+constexpr uint8_t kRelayPin = 3;
+constexpr uint8_t kDhtPin = 4;
+constexpr uint8_t kDhtType = DHT22;
 
-// USER SETTINGS
-const bool TEMP_CONTROL_ENABLED = false; // Enable automatic temperature control
-const float TEMP_THRESHOLD = 30.0;
-const float TEMP_HYSTERESIS = 0.5;
+// thermostat settings
+constexpr bool kTempControlEnabled = false;
+constexpr float kTempThreshold = 30.0f;
+constexpr float kTempHysteresis = 0.5f;
 
-// HARDWARE-SPECIFIC SETTINGS
-const uint8_t RELAY_ON = HIGH;
-const uint8_t RELAY_OFF = LOW;
-const uint8_t LCD_ADDRESS = 0x27; // I2C address of the LCD
+// hardware settings
+constexpr uint8_t kRelayOn = HIGH;
+constexpr uint8_t kRelayOff = LOW;
+constexpr uint8_t kLcdAddress = 0x27;
 
-DHT dht(DHT_PIN, DHT_TYPE);
-LiquidCrystal_I2C lcd(LCD_ADDRESS, 16, 2);
-
+// function prototypes
 void handleIR();
 void readDHT();
 void handleTempControl();
 void updateLCD();
-void clearLCD(uint8_t row);
+void printPadded(uint8_t row, const char* text);
+
+DHT dht(kDhtPin, kDhtType);
+LiquidCrystal_I2C lcd(kLcdAddress, 16, 2);
 
 unsigned long dhtTimer = 0;
 bool fanMode = false;
@@ -33,9 +35,9 @@ float temp = NAN;
 float humid = NAN;
 
 void setup() {
-  pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, RELAY_OFF);
-  IrReceiver.begin(IR_PIN, ENABLE_LED_FEEDBACK);
+  pinMode(kRelayPin, OUTPUT);
+  digitalWrite(kRelayPin, kRelayOff);
+  IrReceiver.begin(kIrPin, ENABLE_LED_FEEDBACK);
   lcd.init();
   lcd.backlight();
   dht.begin();
@@ -46,9 +48,7 @@ void loop() {
   handleIR();
   if (fanMode) {
     readDHT();
-    if (!TEMP_CONTROL_ENABLED) {
-      digitalWrite(RELAY_PIN, RELAY_ON);
-    } else {
+    if (kTempControlEnabled) {
       handleTempControl();
     }
   }
@@ -56,22 +56,27 @@ void loop() {
 
 void handleIR() {
   if (IrReceiver.decode()) {
-    // Prevent repeated IR signals caused by holding a button
+    // ignore held button repeats
     if (!(IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT)) {
       fanMode = !fanMode;
-      if (!fanMode) {
-        digitalWrite(RELAY_PIN, RELAY_OFF);
+      if (fanMode) {
+        // direct power on if thermostat control is off
+        if (!kTempControlEnabled) {
+          digitalWrite(kRelayPin, kRelayOn);
+        }
+      } else {
+        digitalWrite(kRelayPin, kRelayOff);
         temp = NAN;
         humid = NAN;
       }
       updateLCD();
     }
-    IrReceiver.resume();
+    IrReceiver.resume(); // prepare for the next signal
   }
 }
 
 void readDHT() {
-  // Limit DHT readings to once every 2 seconds
+  // poll sensor at most once every 2 seconds
   if (millis() - dhtTimer >= 2000) {
     temp = dht.readTemperature();
     humid = dht.readHumidity();
@@ -82,37 +87,43 @@ void readDHT() {
 
 void handleTempControl() {
   if (!isnan(temp)) {
-    if (temp >= TEMP_THRESHOLD) {
-      // Turn the fan on when the temperature reaches the threshold
-      digitalWrite(RELAY_PIN, RELAY_ON);
-    } else if (temp <= TEMP_THRESHOLD - TEMP_HYSTERESIS) {
-      // Turn the fan off when the temperature drops below the hysteresis range
-      digitalWrite(RELAY_PIN, RELAY_OFF);
+    // hysteresis logic: turn on at threshold, off below threshold with offset
+    if (temp >= kTempThreshold) {
+      digitalWrite(kRelayPin, kRelayOn);
+    } else if (temp <= kTempThreshold - kTempHysteresis) {
+      digitalWrite(kRelayPin, kRelayOff);
     }
   }
 }
 
 void updateLCD() {
-  clearLCD(0);
-  lcd.print("NAVI FAN ");
-  lcd.print(fanMode ? "ON" : "OFF");
-  lcd.print(" TC");
-  lcd.print(TEMP_CONTROL_ENABLED ? "1" : "0");
-  clearLCD(1);
+  char buffer[17];
+
+  // top row: fan and thermostat status
+  snprintf(buffer, sizeof(buffer), "NAVI FAN %-3s TC%d", fanMode ? "ON" : "OFF",
+           kTempControlEnabled ? 1 : 0);
+  printPadded(0, buffer);
+
+  // bottom row: standby message or sensor readings
   if (!fanMode) {
-    lcd.print("PRESS ANY KEY");
+    printPadded(1, "PRESS ANY KEY");
   } else if (isnan(temp) || isnan(humid)) {
-    lcd.print("NO DATA");
+    printPadded(1, "NO DATA");
   } else {
-    lcd.print("T:");
-    lcd.print(temp, 2);
-    lcd.print(" H:");
-    lcd.print(humid, 2);
+    char tStr[6];
+    char hStr[6];
+    dtostrf(temp, 4, 1, tStr);
+    dtostrf(humid, 4, 1, hStr);
+    snprintf(buffer, sizeof(buffer), "T:%s H:%s", tStr, hStr);
+    printPadded(1, buffer);
   }
 }
 
-void clearLCD(uint8_t row) {
+// pad line with spaces to avoid screen flicker
+void printPadded(uint8_t row, const char* text) {
   lcd.setCursor(0, row);
-  lcd.print("                ");
-  lcd.setCursor(0, row);
+  lcd.print(text);
+  for (uint8_t i = strlen(text); i < 16; i++) {
+    lcd.write(' ');
+  }
 }
