@@ -1,4 +1,4 @@
-# NAVI Fan Controller - Rewrite pending
+# NAVI Fan Controller
 
 <p align="left">
   <img src="https://img.shields.io/badge/C++-11+-00599C?style=flat-square&logo=c%2B%2B&logoColor=white" alt="C++ Standard" />
@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
 </p>
 
-Microcontroller-based environmental cooling and climate automation system. Ingests ambient telemetry via a calibrated DHT22 sensor, executes closed-loop hysteresis control or manual relay override, and provides non-blocking status rendering across an I2C-driven 1602 character display.
+Microcontroller-based environmental cooling and climate automation system. Ingests ambient telemetry via a calibrated DHT22 sensor, executes closed-loop hysteresis control or manual relay override, and provides non-blocking status rendering across an I2C-driven 1602 character display. PlatformIO-compatible rewrite pending.
 
 ---
 
